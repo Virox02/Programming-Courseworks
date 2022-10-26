@@ -1,0 +1,94 @@
+---
+title: "Lecture Assignment 15"
+author: "Viraj Vijaywargiya"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(nycflights13)
+library(tidyverse)
+```
+
+
+\newpage
+**Part 13.4.6**
+
+**Question 1** 
+
+```{r Q1}
+avg_delays <-flights %>%
+  group_by(dest) %>%
+  summarise(delay = mean(arr_delay, na.rm = TRUE)) %>%
+  inner_join(airports, by = c(dest = "faa"))
+
+avg_delays %>%
+  ggplot(aes(x = lon, y = lat, colour = delay)) +
+  borders("state") +
+  geom_point() +
+  coord_quickmap()
+```
+
+\newpage
+**Question 2**
+```{r Q2}
+locations <- airports %>%
+  select(faa, lat, lon)
+
+flights %>%
+  select(year:day, hour, origin, dest) %>%
+  left_join(locations, by = c("origin" = "faa")) %>%
+  left_join(locations, by = c("dest" = "faa"),
+    suffix = c("Origin", "Dest"))
+```
+
+**Question 5**
+
+From June 12 to June 13, there was a series of derechos, a widespread storm, in the southeastern and Midwest US.
+```{r}
+flights %>%
+  filter(year == 2013, month == 6, day == 13) %>%
+  group_by(dest) %>%
+  summarise(delay = mean(arr_delay, na.rm = TRUE)) %>%
+  inner_join(airports, by = c("dest" = "faa")) %>%
+  ggplot(aes(y = lat, x = lon, size = delay, colour = delay)) +
+  borders("state") +
+  geom_point() +
+  coord_quickmap() +
+  scale_colour_viridis_c()
+```
+As shown in the plot above, the largest delays were in the southeast and the Midwest, which was where the storm occurred across.
+
+\newpage
+**Part 13.5.1**
+
+**Question 1** 
+
+Flights having a missing tailnum means flight being cancelled, as they have msissing values of arr_time.
+
+```{r}
+flights %>%
+  anti_join(planes, by = "tailnum") %>%
+  count(carrier, sort = TRUE)
+```
+Tail numbers that don’t have a matching record in planes are registered to American Airlines (AA) or Envoy Airlines (MQ).
+
+**Question 2**
+
+```{r}
+flights100 <- flights %>%
+  filter(!is.na(tailnum)) %>%
+  group_by(tailnum) %>%
+  count() %>%
+  filter(n >= 100)
+
+flights %>%
+  semi_join(flights100, by = "tailnum")
+```
+
+
+

@@ -1,0 +1,127 @@
+---
+title: "Lecture Assignment 13"
+author: "Viraj Vijaywargiya"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(tidyverse)
+```
+
+
+\newpage
+**Part 12.4.3**
+
+**Question 1**
+
+The extra and fill arguments in separate() tells what to do if there are too many values and what to do if there aren't enough values respectively.
+
+```{r}
+tibble(x = c("a,b,c", "d,e,f,g", "h,i,j")) %>% 
+  separate(x, c("one", "two", "three"))
+
+tibble(x = c("a,b,c", "d,e", "f,g,i")) %>% 
+  separate(x, c("one", "two", "three"))
+```
+By default, separate() drops extra values and fill fills columns with missing values, giving a warning for both. 
+```{r}
+tibble(x = c("a,b,c", "d,e,f,g", "h,i,j")) %>% 
+  separate(x, c("one", "two", "three"), extra = "drop")
+
+tibble(x = c("a,b,c", "d,e", "f,g,i")) %>% 
+  separate(x, c("one", "two", "three"), fill = "right")
+```
+With extra = "drop" or fill = "right", it produces the same results as before but without warnings. Alternatively, we can also use extra = "merge" and fill = "left". 
+```{r}
+tibble(x = c("a,b,c", "d,e,f,g", "h,i,j")) %>% 
+  separate(x, c("one", "two", "three"), extra = "merge")
+
+tibble(x = c("a,b,c", "d,e", "f,g,i")) %>% 
+  separate(x, c("one", "two", "three"), fill = "left")
+```
+With extra = "merge", the extra values merge into one so f and g becomes "f,g". With fill = "left", it fills the missing value but, from the left. 
+
+**Question 2**
+
+The remove() argument, in both unite() and separate(), discards the input columns in resulted data frame. In the case of creating a new variable, but keeping the old one, you would set it to FALSE. 
+
+**Part 12.5.1**
+
+**Question 1**
+
+The fill arguments to pivot_wider() and complete() both are used to set values to replace NAs. While fill to pivot_wider() sets all values to replace NAs, fill to complete() does the same going through a list of names allowing for different variables and values. 
+
+**Question 2**
+
+The direction argument to fill() states whether NA value(s) should be replaced by the next non-missing value(s), using "up", or replaced by the previous non-missing value(s), using "down". 
+
+\newpage
+**Part 12.6.1**
+```{r}
+who1 <- who %>% 
+  pivot_longer(
+    cols = new_sp_m014:newrel_f65, 
+    names_to = "key", 
+    values_to = "cases", 
+    values_drop_na = TRUE
+  )
+
+who1 %>% 
+  count(key)
+
+who2 <- who1 %>% 
+  mutate(key = stringr::str_replace(key, "newrel", "new_rel"))
+
+who3 <- who2 %>% 
+  separate(key, c("new", "type", "sexage"), sep = "_")
+
+who3 %>% 
+  count(new)
+
+who4 <- who3 %>%
+  select(-new, -iso2, -iso3)
+
+who5 <- who4 %>%
+  separate(sexage, c("sex", "age"), sep = 1)
+```
+
+\newpage
+**Question 2**
+
+```{r}
+temp_who3 <- who1 %>%
+  separate(key, c("new", "type", "sexage"), sep = "_")
+```
+Neglecting the mutate step results in separate() giving a warning for too few values as it expects 3 pieces. 
+
+**Question 3**
+
+```{r}
+select(who3, country, iso2, iso3) %>%
+  distinct() %>%
+  group_by(country) %>%
+  filter(n() > 1)
+```
+There is only one distinct combination of iso2 and iso3 values within each country, therefore, iso2 and iso3 are redundant with country. 
+
+**Question 4**
+
+```{r}
+who5 %>%
+  group_by(country, year, sex) %>%
+  filter(year > 1995) %>%
+  summarise(cases = sum(cases)) %>%
+  unite(new, country, sex, remove = FALSE) %>%
+  ggplot(aes(x = year, y = cases, group = new, colour = sex)) +
+  geom_line()
+```
+
+
+
+
+

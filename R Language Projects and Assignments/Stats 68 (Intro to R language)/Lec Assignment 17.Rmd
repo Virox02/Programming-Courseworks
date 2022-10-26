@@ -1,0 +1,173 @@
+---
+title: "Lecture Assignment 17"
+author: "Viraj Vijaywargiya"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(tidyverse)
+```
+
+\newpage
+
+**Part 15.3.1**
+
+**Question 1**
+
+Exploring the distribution of **rincome** with default bar chart,
+
+```{r Q1}
+ggplot(gss_cat, aes(rincome)) +
+  geom_bar()
+```
+
+With the default bar chart, the overlapping of labels on the x axis makes it hard to understand. We can improve the plot by flipping the x and y axis.
+
+```{r}
+ggplot(gss_cat, aes(rincome)) +
+  geom_bar() +
+  coord_flip()
+```
+
+**Question 2**
+
+```{r Q2}
+gss_cat %>%
+  count(relig) %>%
+  arrange(desc(n)) %>%
+  head(1)
+```
+
+"Protestant" is the most common relig.
+
+```{r}
+gss_cat %>%
+  count(partyid) %>%
+  arrange(desc(n)) %>%
+  head(1)
+```
+
+"Independent" is the most common partyid.
+
+**Question 3**
+
+Finding out with a table,
+
+```{r}
+levels(gss_cat$denom)
+```
+
+From this we can see that the relig, denom applies to, is "Protestant".
+
+```{r}
+gss_cat %>%
+  count(relig, denom) %>%
+  ggplot(aes(x = relig, y = denom, size = n)) +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+From the scatterplot above, we can also see that the relig, denom applies to, is "Protestant".
+
+\newpage
+
+**Part 15.4.1**
+
+**Question 1**
+
+Checking the summary and visualizing the data,
+
+```{r}
+summary(gss_cat$tvhours)
+
+gss_cat %>%
+  filter(!is.na(tvhours)) %>%
+  ggplot(aes(x = tvhours)) +
+  geom_histogram(binwidth = 1)
+```
+
+The tv hours and the mean looks fine to me. However, the potential of mean depends on what it is used for.
+
+**Question 2**
+
+Factors in gss_cat,
+
+```{r}
+keep(gss_cat, is.factor) %>% 
+  names()
+```
+
+For **marital**,
+
+```{r}
+levels(gss_cat$marital)
+
+ggplot(gss_cat, aes(marital)) +
+  geom_bar()
+```
+
+The order of the levels for **marital** can be principled or arbitrary. This is because the way it is ordered does make a little sense but at the same time, it is not very principled.
+
+For **race**,
+
+```{r}
+levels(gss_cat$race)
+
+ggplot(gss_cat, aes(race)) +
+  geom_bar()
+```
+
+The order of the levels for **race** is principled as it is ordered by counts.
+
+For **rincome**,
+
+```{r}
+levels(gss_cat$rincome)
+
+ggplot(gss_cat, aes(rincome)) +
+  geom_bar() +
+  coord_flip()
+```
+
+The order of the levels for **rincome** is principled if we exclude "Not applicable", "Refused", "Don't know", and "No answer". The **rincome** is ordered in decreasing order of income.
+
+For **partyid**,
+
+```{r}
+levels(gss_cat$partyid)
+
+ggplot(gss_cat, aes(partyid)) +
+  geom_bar() +
+  coord_flip()
+```
+
+The order of the levels for **partyid** is principled as it is ordered from "Strong republican" to "Strong democrat".
+
+For **relig**,
+
+```{r}
+levels(gss_cat$relig)
+
+ggplot(gss_cat, aes(relig)) +
+  geom_bar() +
+  coord_flip()
+```
+
+The order of the levels for **relig** is arbitrary as there is no natural ordering.
+
+For **denom**,
+
+```{r}
+levels(gss_cat$denom)
+
+ggplot(gss_cat, aes(denom)) +
+  geom_bar() +
+  coord_flip()
+```
+
+The order of the levels for **denom** is also arbitrary as there is no natural ordering.

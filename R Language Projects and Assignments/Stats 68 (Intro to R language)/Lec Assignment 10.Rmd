@@ -1,0 +1,81 @@
+---
+title: "Lecture Assignment 10"
+author: "Viraj Vijaywargiya"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(tidyverse)
+```
+
+
+\newpage 
+**Part 10.5**
+
+**Question 1** 
+
+```{r Q1}
+mtcars
+is_tibble(mtcars)
+as_tibble(mtcars)
+```
+
+Tibbles have a refined print method that shows only the first 10 rows, and all the columns that fit on screen. Also, printing mtcars, which is not a tibble, shows the description of the data as "df[32 x 11]" where df means data frame. After converting the object to a tibble, using as_tibble(), printing it shows the description of the data as "A tibble: 32 x 11". Furthermore, by using is_tibble(), we can check if the object is a tibble. In this case, using is_tibble(mtcars) gives FALSE. 
+
+**Question 2**
+```{r Q2}
+df <- data.frame(abc = 1, xyz = "a")
+df$x
+df[, "xyz"]
+df[, c("abc", "xyz")]
+```
+```{r}
+tbl <- as_tibble(df)
+tbl$x
+tbl[, "xyz"]
+tbl[, c("abc", "xyz")]
+```
+
+Using the $ operator with data.frame matches any column name that starts with the name following it, therefore, df$x exapnds to df$xyz. This feature can be frustrating as you might end up using a different column than the one you expected. However, tibble is strict with these kind of issues as they never do partial matching, and they will generate a warning if the column you are trying to access does not exist. This prevents the user from using the wrong column. Moreover, using "[" with data.frame returns a type of object that differs on the number of columns. It will return a data.frame if there's more than one column, else, it will return a vector. This is also frustrating as what the code does depends on the length of the variable, and it would require us to write a code to handle such situations. 
+
+**Question 4**
+```{r}
+annoying <- tibble(
+  `1` = 1:10,
+  `2` = `1` * 2 + rnorm(length(`1`))
+)
+```
+```{r}
+annoying$`1`
+```
+```{r}
+ggplot(annoying, aes(x = `1`, y = `2`))+
+  geom_point()
+```
+
+```{r}
+annoying <- mutate(annoying, `3` = `2`/`1`)
+print(annoying)
+```
+
+```{r}
+annoying <- rename(annoying, one = `1`, two = `2`, three = `3`)
+print(annoying)
+```
+
+**Question 5**
+
+enframe() converts named atomic vectors or lists to one- or two-column data frames. For a list, the result will be a nested tibble with a column of type list. For unnamed vectors, the natural sequence is used as name column. For example, 
+```{r}
+enframe(c(a = 10, b = 15))
+```
+
+**Question 6**
+
+You can explicitly print() the data frame and control the number of rows (n) and the width of the display. Additional column names to be printed can be controlled using "print(width = )".
+

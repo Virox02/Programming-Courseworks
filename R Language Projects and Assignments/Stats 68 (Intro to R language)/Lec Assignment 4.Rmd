@@ -1,0 +1,84 @@
+---
+title: "Lecture Assignment 4"
+author: "Viraj Vijaywargiya"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(tidyverse)
+```
+
+
+\newpage 
+**Part 3.7.1**
+
+**Question 1** 
+
+The default geom associated with stat_summary() is geom_pointrange(). 
+Below is how you could rewrite the previous plot to use geom_pointrange() instead of the stat function,
+
+```{r Q1}
+
+ggplot(data = diamonds) +
+  geom_pointrange(mapping = aes(x = cut, y = depth), stat = "summary", 
+                  fun.min = min, fun.max = max, fun = median)
+
+```
+
+
+**Question 2**
+
+geom_col() is a wrapper over geom_bar() and has stat_identity() as the default stat, which is different than the default stat of geom_bar(). 
+The geom_col() needs both x and y values from the data, representing the bar height. Whereas, geom_bar() only needs an x variable as it uses stat_count() as a default stat, which pre-processes input data by counting the number of observations for each value of x and so, the values of these counts are used for the y variable. 
+
+\newpage 
+**Part 3.8.1**
+
+**Question 1**
+
+Because there are multiple observations for each combination of cty and hwy values, there is overplotting. \newline
+We could improve it by using a jitter position adjustment as it shows the area with more observations.
+```{r}
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) + 
+  geom_point(position = "jitter")
+```
+
+**Question 2**
+
+```{r}
+?geom_jitter()
+```
+
+The "width" and "height" parameters to geom_jitter() control the amount of jittering. Width controls the amount of horizontal displacement, and height controls the amount of vertical displacement.
+
+\newpage 
+**Part 3.9.1**
+
+**Question 1**
+
+A stacked bar chart.
+```{r}
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = 1, fill = clarity), show.legend = FALSE, width = 1)
+```
+
+A stacked bar chart with polar coordinates is a pie chart. We also need to add the argument theta = "y" to coord_polar() to map "y" to the angle of each section. 
+```{r}
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = 1, fill = clarity), show.legend = FALSE, width = 1) +
+  coord_polar(theta = "y")
+```
+
+**Question 2**
+
+```{r}
+?labs()
+```
+
+labs() is used for modifying axis, legend, and plot labels. It adds plot title, plot subtitle, plot caption, and axis titles.  
+

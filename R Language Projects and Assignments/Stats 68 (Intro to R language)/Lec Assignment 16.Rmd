@@ -1,0 +1,86 @@
+---
+title: "Lecture Assignment 16"
+author: "Viraj Vijaywargiya"
+date: "`r Sys.Date()`"
+always_allow_html: true
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(tidyverse)
+```
+
+
+\newpage
+**Part 14.2.5**
+
+**Question 1** 
+The paste() function by default separates strings by space, whereas, the paste0() function does not separate strings by space by default.
+They are equivalent to the str_c() function, however, it is more like paste0() as it does not separate strings with spaces by default. 
+While the paste() and paste0() functions convert NA to the string "NA" and treat it as a character vector, str_c() returns NA if any argument is a missing value. 
+
+
+**Question 3**
+```{r Q2}
+x <- c("Apple", "Banana", "Pear")
+len <- str_length(x)
+f <- ceiling(len / 2)
+str_sub(x, f, f)
+```
+If the string has an even number of characters, I choose ceiling(length/2) as it also accounts for cases when the length of string is one.
+
+**Question 4**
+
+The str_wrap() function wraps text, fitting within a certain width. We might want to use this function when wrapping long texts to be typeset.
+
+**Part 14.3.1.1**
+
+**Question 1**
+
+"\" will escape the next character in R string.
+"\\" will resolve to \ in regular expression, escaping the next character in the regular expression. 
+For "\\\", the first 2 \\ will resolve to \ in regular expression, and the third escaping the next character.
+
+**Question 2**
+
+```{r}
+str_view("\"'\\", "\"'\\\\", match = TRUE)
+```
+
+**Part 14.3.2.1**
+
+**Question 1**
+```{r}
+str_view(c("$^$", "ab$^$sfas"), "^\\$\\^\\$$", match = TRUE)
+```
+
+**Question 2**
+
+1) Words starting with "y", 
+```{r}
+str_view(stringr::words, "^y", match = TRUE)
+```
+
+2) Words ending with "x",
+```{r}
+str_view(stringr::words, "x$", match = TRUE)
+```
+
+3) Words that are exactly three letters long,
+```{r}
+str_view(stringr::words, "^...$", match = TRUE)
+```
+
+4) Words having seven letters or more,
+```{r}
+str_view(stringr::words, ".......", match = TRUE)
+```
+
+

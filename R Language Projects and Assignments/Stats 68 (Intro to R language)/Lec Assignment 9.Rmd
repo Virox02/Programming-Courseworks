@@ -1,0 +1,96 @@
+---
+title: "Lecture Assignment 9"
+author: "Viraj Vijaywargiya"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(tidyverse)
+```
+
+
+\newpage 
+**Part 7.5.1.1**
+
+**Question 1** 
+
+To improve the visualization, we can use boxplot instead of freqpoly.
+```{r Q1}
+nycflights13::flights %>%
+  mutate(cancelled = is.na(dep_time), sched_hour = sched_dep_time %/% 100,
+    sched_min = sched_dep_time %% 100, sched_dep_time = sched_hour + sched_min / 60) %>%
+  ggplot() +
+  geom_boxplot(mapping = aes(y = sched_dep_time, x = cancelled))
+
+```
+
+
+\newpage
+**Question 2**
+
+Comparing the relationships of variables, carat, clarity, color, and cut, with price using boxplot. 
+
+```{r Q2}
+ggplot(data = diamonds, mapping = aes(x = carat, y = price)) + #both continuous
+  geom_boxplot(mapping = aes(group = cut_width(carat, 0.1)), orientation = "x")
+
+diamonds %>%
+  mutate(color = fct_rev(color)) %>%
+  ggplot(aes(x = color, y = price)) +
+    geom_boxplot()
+
+ggplot(data = diamonds) +
+  geom_boxplot(mapping = aes(x = clarity, y = price))
+
+ggplot(data = diamonds) +
+  geom_boxplot(mapping = aes(x = cut, y = price))
+```
+
+From the plots above, clearly the variable, carat, is most important for predicting the price of a diamond. 
+Relationship between carat and cut using a boxplot.
+```{r}
+ggplot(data = diamonds) +
+  geom_boxplot(mapping = aes(x = cut, y = carat))
+```
+
+A slight negative relation between carat and cut can be seen from the plot above, with largest carat diamond having a cut of Fair. This could be because a large diamond can be sold with lower quality, whereas, a small diamond needs to have a better cut. 
+
+\newpage 
+**Part 7.5.2.1**
+
+**Question 3**
+
+Categorical variables with larger number of categories or longer labels should kept on the y axis, which makes it easier to read. However, this is just slightly better in this case because the labels don't overlap when the order is switched. Also, larger numbers are at the top when using x = color and y = cut, and this also makes the plot easier to read. 
+
+
+**Part 7.5.3.1**
+
+**Question 2**
+
+```{r}
+ggplot(data = diamonds, mapping = aes(x = price, y = carat)) +
+  geom_boxplot(mapping = aes(group = cut_number(price, 10))) +
+  coord_flip()
+```
+
+\newpage
+**Question 3**
+
+```{r}
+ggplot(data = diamonds, mapping = aes(x = x, y = price)) +
+  geom_point()
+```
+
+There is more variation in prices for larger diamonds than for smaller ones. I didn't really know what to expect as I have very little knowledge about diamonds, however, it does make sense as larger diamonds would have more variety (in terms of cut, color, clarity) and therefore, vary more in price than those of smaller ones. 
+
+
+**Question 5**
+
+There is a strong relation between x and y in this case, and the outliers aren't extreme in either x or y. Therefore, a scatterplot is a better display because a binned plot would not reveal these outliers, which may leave us to believe that the largest value of x was an outlier even if it fits the bivariate pattern well. 
+
+

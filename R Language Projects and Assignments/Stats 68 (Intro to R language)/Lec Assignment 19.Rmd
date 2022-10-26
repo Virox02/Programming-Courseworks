@@ -1,0 +1,105 @@
+---
+title: "Lecture Assignment 19"
+author: "Viraj Vijaywargiya"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(tidyverse)
+```
+
+
+\newpage
+**Part 19.4.4**
+
+**Question 1** 
+
+if statement is used to test a single condition, or an object of length 1. Whereas, ifelse() is used for multiple conditions, chaining multiple if statements together, meaning that it also works with vectors with length greater than 1. 
+```{r}
+x <- 1
+if (x == 1) {
+  "True"
+} else {
+  "False"
+}
+
+x <- 3
+if (x == 1) {
+  "True"
+} else if (x == 0){
+  "False"
+} else {
+  "Invalid"
+}
+```
+
+**Question 2**
+
+```{r}
+GreetFunc <- function(){
+  hr <- lubridate::hour(lubridate::now())
+  if (dplyr::between(hr, 12, 18)){
+    print("good afternoon")
+  } else if(dplyr::between(hr, 18, 24)){
+    print("good evening")
+  } else {
+    print("good morning")
+  }
+}
+
+GreetFunc()
+```
+
+\newpage
+**Question 3**
+
+```{r}
+fizzbuzz <- function(n){
+  if (n %% 3 == 0 && n %% 5 == 0){
+    "fizzbuzz"
+  } else if (n %% 3 == 0) {
+    "fizz"
+  } else if (n %% 5 == 0) {
+    "buzz"
+  } else {
+    n
+  }
+}
+
+fizzbuzz(15)
+fizzbuzz(18)
+fizzbuzz(35)
+fizzbuzz(16)
+```
+
+**Question 4**
+
+```{r}
+temp <- function(t){
+  cut(t, breaks = c(-Inf,0,10,20,30,Inf),
+      labels = c('freezing','cold','cool','warm','hot'))
+}
+
+temp(c(-5,0,5,10,15,20,25,30,35))
+```
+
+We would add the argument, right = FALSE, to cut() to indicate intervals should be closed if < is used instead of <=. 
+Because we have multiple conditions, vector of length greater than 1, cut() has an advantage over "if" if we have many values in temp.
+
+\newpage
+**Part 19.5.5**
+
+**Question 1**
+
+```{r}
+commas <- function(...) stringr::str_c(..., collapse = ", ")
+#commas(letters, collapse = "-")
+```
+With the way commas() is defined above, "commas(letters, collapse = "-")" gives an error. This is because collapse is set to "," in the inital definition of the commas() function. The same named argument is given twice, which is an error. 
+
+ 

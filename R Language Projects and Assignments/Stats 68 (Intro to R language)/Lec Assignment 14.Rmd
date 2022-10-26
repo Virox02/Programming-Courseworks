@@ -1,0 +1,96 @@
+---
+title: "Lecture Assignment 14"
+author: "Viraj Vijaywargiya"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(tidyverse)
+library(nycflights13)
+```
+
+\newpage
+
+**Part 13.2.1**
+
+**Question 1**
+
+To draw (approximately) the route each plane flies from its origin to its destination, we require the longitude and latitude of the origin and destination airports, therefore, we need the **origin**, **dest**, **lon**, and **lat** variables. For this, we would need to combine the **flights** table**,** which has the origin and dest variable, and the **airports** table, which has the lon and lat variable.
+
+**Question 2**
+
+weather connects to airports through **origin** (variable in the weather table) and **faa** (variable in the airports table). In the diagram, it can be represented with an arrow going from **faa** in airports to **origin** in weather.
+
+**Question 3**
+
+If weather contained records for all airports in the USA, other than just the origin (NYC) airports, then it would also have the weather for the destination airports. Therefore, flights would additionally connect with weather via **dest**.
+
+**Question 4**
+
+The data frame would be a table having variables representing special dates, like **year**, **month**, **day**, and **holiday**. The primary keys would be year, month, and day columns. Below in an example of how the data frame might look like,
+
+```{r}
+special <- tribble(
+  ~year, ~month, ~day, ~holiday,
+  #----|--|--|----
+  2013, 01, 01, "New Years Day",
+  2013, 01, 21, "Martin Luther King Jr. Day",
+  2013, 02, 18, "Presidents' Day",
+  2013, 07, 04, "Independence Day",
+  2013, 11, 28, "Thanksgiving Day",
+  2013, 12, 25, "Christmas Day"
+)
+```
+
+This table above would connect to the flights table through the **year**, **month**, and **day** variables.
+
+\newpage
+
+**Part 13.3.1**
+
+**Question 1**
+
+```{r}
+flights %>%
+  mutate(num_flight = row_number()) %>%
+  glimpse()
+```
+I added the column, num_flight, as a surrogate key.
+
+**Question 2**
+
+```{r}
+glimpse(Lahman::Batting)
+```
+
+The primary key for the above dataset (Lahman::Batting) is **playerID**, **yearID**, and **stint**.
+
+```{r}
+library(babynames)
+glimpse(babynames::babynames)
+```
+The primary key for the above dataset (babynames::babynames) is year, sex, and name. 
+
+```{r}
+library(nasaweather)
+glimpse(nasaweather::atmos)
+```
+The primary key for the above dataset(nasaweather::atmos) is lat, long, year, and month. 
+
+```{r}
+library(fueleconomy)
+glimpse(fueleconomy::vehicles)
+```
+The primary key for the above dataset (fueleconomy::vehicles) is id. 
+
+```{r}
+glimpse(diamonds)
+```
+There is no combination of variables/columns that uniquely identifies the each observation, therefore, there is no primary key for the above dataset (fueleconomy::vehicles).
+
+

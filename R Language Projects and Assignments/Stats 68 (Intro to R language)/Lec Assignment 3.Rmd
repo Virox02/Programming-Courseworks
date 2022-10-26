@@ -1,0 +1,110 @@
+---
+title: "Lecture Assignment 3"
+author: "Viraj Vijaywargiya"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(tidyverse)
+```
+
+
+\newpage <!-- Try taking this out and see what happens --->
+**Part 3.2.4**
+
+**Question 1**
+
+```{r Q1}
+
+ggplot(data = mpg)
+
+```
+
+
+Based on the output, it looks like R is not rendering the graph. It looks to me like I need the additional function code  `+ geom_function()`
+
+\newpage
+**Question 2**
+```{r Q2}
+
+mpg
+
+```
+
+There are 234 Rows, and 11 columns
+
+**Question 3**
+```{r}
+?mpg
+```
+
+The drv variable is the type of drive train, where f = front-wheel drive, r = rear wheel drive, 4 = 4wd
+
+\newpage
+
+**Question 4**
+
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = cyl, y = hwy))
+```
+
+\newpage
+
+**Part 3.3.1**
+
+**Question 1**
+
+The points are not blue because color = "blue" is inside aes(). It should be set manually by setting it as an argument of the geom function i.e. it goes outside of the aes() like shown below. 
+
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy), color = "blue")
+```
+
+
+**Question 2**
+
+```{r}
+?mpg
+mpg
+```
+
+Categorical variables: manufacturer, model, trans, drv, fl, class.
+Quantitative variables: displ, year, cyl, cty, hwy
+
+The columns in the mpg data frame represent the variables. There are 11 columns and therefore, 11 variables. Numeric variables are quantitative variables and non-numeric variables are categorical variables.
+
+
+**Question 3**
+
+Using the continuous variable, cty.
+
+Mapping to color,
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, color = cty))
+```
+
+For the continous variable, cty, the color scale used varies from light to dark blue. Whereas, for discrete variables, the color scale uses discrete colors.
+
+Mapping to size,
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, size = cty))
+```
+
+For continuous variable, cty, the sizes of the points vary continuously corresponding to the function of their size.
+
+
+
+For continuous variable, cty, mapping to shape gives an error saying continuous variables cannot be mapped to shape. This is possibly because it is unknown which shape is smaller/greater than the other. 
+
+
+
+

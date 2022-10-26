@@ -1,0 +1,63 @@
+---
+title: "Lecture Assignment 11"
+author: "Viraj Vijaywargiya"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(tidyverse)
+```
+
+
+\newpage 
+**Part 11.3.5**
+
+**Question 1**
+
+locale is used to set date and time formats, time zone, numbers, and encoding. Therefore, the most important arguments to locale() are date_names, date_format, time_format, tz, decimal_mark, grouping_mark, and encoding.
+
+
+**Question 2**
+
+Setting decimal_mark and grouping_mark to the same character throws an error stating that they both must be different.
+
+```{r}
+locale(decimal_mark = ",")
+locale(grouping_mark = ".")
+```
+
+When the decimal_mark is set to ",", the default value of grouping_mark is ".". When the grouping_mark is set to ".", the default value of decimal_mark is ",".
+
+**Question 5**
+
+read_csv() reads comma delimited files, read_csv2() reads semicolon separated files (common in countries where , is used as the decimal place).
+
+\newpage
+**Question 7**
+
+```{r}
+d1 <- "January 1, 2010"
+d2 <- "2015-Mar-07"
+d3 <- "06-Jun-2017"
+d4 <- c("August 19 (2015)", "July 1 (2015)")
+d5 <- "12/30/14" # Dec 30, 2014
+t1 <- "1705"
+t2 <- "11:15:10.12 PM"
+
+parse_date(d1, "%B %d, %Y")
+parse_date(d2, "%Y-%b-%d")
+parse_date(d3, "%d-%b-%Y")
+parse_date(d4, "%B %d (%Y)")
+parse_date(d5, "%m/%d/%y")
+parse_time(t1, "%H%M")
+parse_time(t2, "%H:%M:%OS %p")
+```
+
+
+
+

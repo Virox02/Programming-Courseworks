@@ -1,0 +1,143 @@
+---
+title: "Lecture Assignment 12"
+author: "Viraj Vijaywargiya"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(tidyverse)
+```
+
+\newpage
+
+**Part 12.2.1**
+
+**Question 1**
+
+```{r Q1}
+table1
+```
+
+In table 1, each variable (country, year, cases, and population) has its own column, and the columns contain the values for these variables, associated with each other. Each observation has its own row, that represents the **country** and the **cases** and **population** associated with it for the **year**s given.
+
+```{r}
+table2
+```
+
+In table 2, each observation is a row representing a combination of country, year, type of variable (cases and population) and count associated with the type. For variables, **country** and **year** is represented as 2 separate columns, whereas **cases** and **population** is represented using the columns type and count, where type is either **cases** or **population** and count contains their respective type values.
+
+```{r}
+table3
+```
+
+In table 3, each observation is a row representing a combination of country, year, and rate (dividing the variables cases/population). For variables, **country** and **year** is represented as 2 separate columns, whereas the column, rate, uses the values of **cases** and **population** as characters in the format "**cases**/**population**".
+
+```{r}
+table4a
+table4b
+```
+
+The table4 is split into two tables, table4a and table4b.
+
+In table4a, each observation is a row representing a combination of country and the years, 1999 and 2000, showing their respective cases. For variables, **country** is represented as a separate column, whereas, the columns, 1999 and 2000, are **year**s that contain their respective **cases** as values.
+
+In table4b, each observation is a row representing a combination of country and the years, 1999 and 2000, showing their respective population. For variables, **country** is represented as a separate column, whereas, the columns, 1999 and 2000, are **year**s that contain their respective **population** values.
+
+**Question 2**
+
+Computing the rate for table2,
+
+```{r Q2}
+cases2 <- filter(table2, type == "cases") %>%
+  rename(cases = count) %>%
+  arrange(country, year)
+
+population2 <- filter(table2, type == "population") %>%
+  rename(population = count) %>%
+  arrange(country, year)
+
+all_cases <- tibble(year = cases2$year, country = cases2$country,
+  cases = cases2$cases, population = population2$population) %>%
+  mutate(final_cases = (cases / population) * 10000) %>%
+  select(country, year, final_cases)
+
+all_cases <- all_cases %>%
+  mutate(type = "final_cases") %>%
+  rename(count = final_cases)
+
+bind_rows(table2, all_cases) %>%
+  arrange(country, year, type, count)
+```
+
+Computing the rate for table4a + table4b,
+
+```{r}
+table4_cases <- tibble( country = table4a$country,
+    `1999` = table4a[["1999"]] / table4b[["1999"]] * 10000,
+    `2000` = table4a[["2000"]] / table4b[["2000"]] * 10000)
+table4_cases
+```
+
+table4a + table4b was easier to work with, than that with table2, as it had split the variables, cases and population, into 2 different tables already so that made it easier to divide cases by population. For table2, we had to create a table with columns for cases and population because it had separate rows for cases and population. So, table2 was harder to work with. However, an ideal table that would be the easiest to work with would be where there are separate columns for country, year, cases, and population. With this, computing cases could be done by just using the mutate() function.
+
+\newpage
+
+**Part 12.3.3**
+
+**Question 1**
+```{r}
+stocks <- tibble(
+  year   = c(2015, 2015, 2016, 2016),
+  half  = c(   1,    2,     1,    2),
+  return = c(1.88, 0.59, 0.92, 0.17)
+)
+stocks %>% 
+  pivot_wider(names_from = year, values_from = return) %>% 
+  pivot_longer(`2015`:`2016`, names_to = "year", values_to = "return")
+
+glimpse(stocks)
+```
+When a data frame is converted from wide to long, column type information is lost, therefore, the functions pivot_longer() and pivot_wider() not perfectly symmetrical.
+
+The names_ptypes argument fails to convert the year column to a numeric vector which throws an error. 
+
+**Question 2**
+
+The columns, 1999 and 2000, are not non-syntactic variable names. Therefore, the column names must be used with backticks (`) or as strings to select the columns, 1999 and 2000. For example,
+```{r}
+table4a %>% 
+  pivot_longer(c(`1999`, `2000`), names_to = "year", values_to = "cases")
+```
+\newpage
+**Question 3**
+```{r}
+people <- tribble(
+  ~name,             ~names,  ~values,
+  #-----------------|--------|------
+  "Phillip Woods",   "age",       45,
+  "Phillip Woods",   "height",   186,
+  "Phillip Woods",   "age",       50,
+  "Jessica Cordero", "age",       37,
+  "Jessica Cordero", "height",   156
+)
+glimpse(people)
+```
+If you widen this table using pivot_wider, it will create columns that are lists of numeric vectors as the columns, name and names, do not identify the rows uniquely.
+
+To uniquely identify each value, we can create a new variable that has the count for different observations for every combination of name and names.
+```{r}
+people2 <- people %>%
+  group_by(name, names) %>%
+  mutate(diff_obs = row_number())
+people2
+```
+
+
+
+
+

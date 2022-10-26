@@ -1,0 +1,66 @@
+---
+title: "Lecture Assignment 5"
+author: "Viraj Vijaywargiya"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(tidyverse)
+```
+
+
+\newpage
+**Part 4.4**
+
+**Question 1** 
+
+The code does not work because "my_varıable" is missing a dot on the 'i'. Therefore, "my_varıable" is not found because it was never created as an object. Instead, "my_variable" was created as an object. This is a small syntax error. 
+
+```{r Q1}
+my_variable <- 10
+my_variable
+
+```
+
+Fixing it makes the code run fine.
+
+**Question 2**
+```{r Q2}
+library(tidyverse)
+
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy))
+
+filter(mpg, cyl == 8)
+filter(diamonds, carat > 3)
+
+```
+
+**Question 3**
+
+Pressing Alt + Shift + K pops up keyboard shortcuts. We can get to the same place in the menu under Tools -> Keyboard Shortcuts Help.
+
+\newpage
+**Part 11.2.2**
+
+**Question 1** 
+
+To read a file where fields are separated with “|”, we would use the read_delim() function with the argument delim = "|". 
+
+**Question 2** 
+
+List of all arguments read_csv() and read_tsv() have in common,
+```{r}
+intersect(names(formals(read_csv)), names(formals(read_tsv)))
+```
+
+read_csv() and read_tsv() have the same arguments. 
+
+**Question 3** 
+
+col_positions(), which defines the column positions, is the most important argument to read_fwf(). 
