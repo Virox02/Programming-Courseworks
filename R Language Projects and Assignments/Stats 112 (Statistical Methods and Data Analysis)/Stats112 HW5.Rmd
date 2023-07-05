@@ -1,0 +1,151 @@
+---
+title: "Stats112 HW5"
+author: "Viraj Vijaywargiya"
+date: "2023-06-06"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(nnet)
+library(lattice)
+library(nlme)
+library(lme4)
+library(geepack) 
+library(survival)
+library(emdbook)
+library(tidyverse)
+```
+
+1.  **1a)**
+
+    ```{r}
+    times = c(1,1,1,6,7,7,10,10,11,12,17,17,19,23,rep(24,29))
+    event = c(1,1,0,1,0,0,1,1,1,1,0,0,1,1,rep(0,29))
+    cbind(bank=1:43,times,event)
+    ```
+
+    **1b)**
+
+    | j   | Time Interval   | nj  | dj  | (nj - dj)/nj | S hat (t) |
+    |-----|-----------------|-----|-----|--------------|-----------|
+    | 0   | 0 \<= t \< 1    | 43  | 0   | 1            | 1         |
+    | 1   | 1 \<= t \< 6    | 43  | 2   | 0.953        | 0.953     |
+    | 2   | 6 \<= t \< 10   | 40  | 1   | 0.975        | 0.930     |
+    | 3   | 10 \<= t \< 11  | 37  | 2   | 0.946        | 0.879     |
+    | 4   | 11 \<= t \< 12  | 35  | 1   | 0.971        | 0.854     |
+    | 5   | 12 \<= t \< 19  | 34  | 1   | 0.971        | 0.829     |
+    | 6   | 19 \<= t \< 23  | 31  | 1   | 0.968        | 0.802     |
+    | 7   | 23 \<= t \<= 24 | 30  | 1   | 0.967        | 0.776     |
+    | \-  | 24 \< t         | \-  | \-  | \-           | \-        |
+
+    **1c)**
+
+    ```{r}
+    m1 = survfit(Surv(times,event) ~ 1, conf.type="log-log") 
+    summary(m1)
+    ```
+
+    80th percentile survival time: 19. 95% C.I for survival time 19 is (0.643, 0.896).\
+    Therefore, we are 95% confident that probability of surviving past time 19 is between 0.643 and 0.896.
+
+    **1d)**
+
+    ```{r}
+    plot(m1,xlab="Time (months)",ylab="Estimated probability of survival", 
+         main="Post-Recession Bank Survival")
+    ```
+
+    **1e)** Treating bank acquisitions as non-informative censoring in the above analyses may not be appropriate. In survival analysis, censoring is considered non-informative when it is unrelated to the event of interest. Non-informative censoring implies that the censoring mechanism does not depend on the unobserved event time.
+
+    In the case of bank acquisitions, treating them as non-informative censoring assumes that the probability of a bank being acquired is unrelated to its potential failure time. However, in reality, bank acquisitions may be influenced by various factors, including the financial health and performance of the bank. Banks that are more likely to fail could be more attractive targets for acquisition.
+
+2.  
+
+    ```{r}
+    data(pbc)
+    PBC = pbc[!is.na(pbc$trt),]
+    ```
+
+    **2a)**
+
+    ```{r}
+    km = survfit(Surv(time, status==2) ~ trt+sex, data=PBC)
+    plot(km,col=c(2,2,3,3),lty=c(1,2,1,2),xlab="Time (days)",
+         ylab="Estimated Survival Probability",
+         main="K-M Survival Curves by Treatment and Sex", 
+         mark.time=FALSE)
+    legend("bottomleft",c("Males on Trt 1", "Females on Trt 1", 
+         "Males on Trt 2", "Females on Trt 2"),
+         col=c(2,2,3,3),lty=c(1,2,1,2))
+    ```
+
+    From the plot above, we can see that there is some overlap between the survival curves for females for each treatment. This means there seems to be no effect of treatment on the survival distribution.\
+    Whereas, for males we can see there is some difference between the survival curves comparing different treatment. Also, the treatment 2 curve seems to be a little higher than\
+    the treatment 1 curve after around 1000 days.
+
+    **2b)**
+
+    ```{r}
+    survdiff(Surv(time, status==2) ~ trt+strata(sex), data=PBC)
+    ```
+
+    H0 : h1k(t) = h2k(t) for all k = 1, 2 and all t \> 0\
+    Ha : h1k(t) = phi h2k(t) for all k = 1, 2 and all t \> 0, phi != 1
+
+    p-value = 0.8, which is greater than 0.05. Therefore, we fail to reject the null and conclude that there is no evidence to reject that the hazards (and so the survival curves) differ among treatments controlling/adjusting for sex.
+
+    **2c)**
+
+    ```{r}
+    survdiff(Surv(time, status==2) ~ trt+sex, data=PBC)
+    ```
+
+    H0 : h11(t) = h21(t) = h12(t) = h22(t).
+
+    This hypothesis has a stronger condition than the hypothesis in the prev part b because it assumes all four survival distributions are the same.
+
+    **2d)**
+
+    ```{r}
+    PBC$log.bili = log(PBC$bili)
+    mod.d = coxph(Surv(time,status==2)~log.bili,data=PBC)
+    summary(mod.d)
+    ```
+
+    Fitted model: hi hat(t) = exp(1.085 log(xi)) h0 hat(t); where hi(t) is the hazard rate (of death) for individual i, xi is the bilirubin level (mg/dl) for subject i, and h0(t) is the hazard function when log(xi) = 0.
+
+    For a 1 unit increase in bilirubin level on the log scale (log(bili) increase 1 unit), the estimated hazard rate of death increases by 196%. A 1 unit increase in log(bili) is estimated to have 2.96 times the hazard of the original log(bili) level.
+
+    **2e)**
+
+    ```{r}
+    mod.e = coxph(Surv(time,status==2)~log(bili)*factor(edema)+age,data=PBC)
+    summary(mod.e)
+    ```
+
+    Fitted hazard ratio for the ith individual:\
+    (hi(t)/h0(t)) hat = exp{0.993 log(xi) + 0.0649 E0.5i + 2.489 E1i + 0.0424 ai\
+    0.196 log(xi) \* E0.5i - 0.498 log(xi) \* E1i}; where xi is the bilirubin level for the ith individual, and ai is the age (years) of the ith individual.\
+    E0.5i: 1 = edema untreated or successfully treated, 0 = else.\
+    E1i: 1 = edema despite diuretic therapy, 0 = else.
+
+    h0(t) is the hazard rate for an individual with no edema, bilirubin level 1 mg/dl, and age zero.
+
+    INTERPRETATIONS\
+    [log(bili)]{.underline}: For individuals with no edema and holding age constant, for each 1 unit increase in log bilirubin level, the estimated hazard rate increases by about 170 (exp(.993) = 2.70).\
+    [log(bili):factor(edema)1]{.underline}: For a 1 unit increase in log bilirubin level, the estimated increase in hazard rate for individuals with no edema is 170% (exp(0.992) = 2.7), but for individuals with edema despite diuretic therapy, the estimated increase is only about 64% (exp(.9926 - .4978) = 1.64), holding age constant.
+
+    [age]{.underline}: The estimated hazard rate increases by about 4% (exp(.0424) = 1.04), for each year increase in age, holding bilirubin level and edema status constant.
+
+    **2f)**
+
+    ```{r}
+    anova(mod.d, mod.e)
+    ```
+
+    H0: reduced model (mod.d) is better. Ha: full model (mod.e) is better.\
+    p-value = 2.128e-09. Therefore, we reject the null (reduced model) and conclude that there is significant evidence that, adjusting for (log) bilirubin level, age, edema status, and the interaction between edema status and (log) bilirubin level help predict the hazard rate of death in the population of patients with primary biliary cirrhosis of the liver.

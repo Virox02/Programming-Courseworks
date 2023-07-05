@@ -1,0 +1,165 @@
+---
+title: "Stats112 HW2"
+author: "Viraj Vijaywargiya"
+date: "2023-04-26"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(lattice)
+library(nlme)
+library(lme4)
+library(survival)
+library(tidyverse)
+```
+
+1.  
+
+    ```{r}
+    NCGS = read.table("/Users/virajvijaywargiya/Downloads/cholesterol-data.txt", na.strings=".")
+
+    NCGS = NCGS[complete.cases(NCGS), ]
+
+    names(NCGS) = c("Trt", "ID", "M0", "M6", "M12", "M20", "M24")
+
+    NCGS$Trt = factor(NCGS$Trt, levels=c(2,1), labels=c("Placebo","HighDose"))
+
+    NCGS.long = reshape(NCGS, varying=list(3:7), idvar="ID", timevar="Month", times=c(0,6,12,20,24), v.names="Chol", direction="long")
+
+    NCGS.long$Time = as.numeric(factor(NCGS.long$Month))
+    ```
+
+    1a)
+
+    ```{r}
+    means = tapply(NCGS.long$Chol, list(NCGS.long$Month, NCGS.long$Trt), mean)
+    times = c(0,6,12,20,24)
+    plot(times, means[,1], type="l", xlab="Month", 
+    	ylab="Mean Serum Cholesterol (mg/dL)",
+    	ylim=c(220,280), main="Mean Serum Cholesterol Trajectories by Treatment",
+    	col="blue", lty=1, pch=15)
+    points(times, means[,2], type="l",
+    	col="red", lty=2, pch=16)
+    legend("topleft",c("Placebo","High-Dose"),
+    	col=c("blue","red"), lty=c(1,2), pch=c(15,16))
+    ```
+
+    ```{r}
+    mod = gls(Chol ~  Month +Trt:Month , data=NCGS.long, weight=varIdent(form = ~ 1 | Time),corr=corSymm(, form = ~ Time | ID))
+    summary(mod)
+
+    b = coef(mod)
+
+    plot(times, means[,1], type="l", xlab="Month", 
+    	ylab="Mean Serum Cholesterol (mg/dL)",
+    	ylim=c(220,280), main="Mean Serum Cholesterol Trajectories by Treatment",
+    	col="blue", lty=1, pch=15)
+    	
+    abline(a=b[1], b=b[2] , col="blue" , lty=2)
+    points(times, means[,2], type="l",
+    	col="red", lty=1, pch=16)
+    abline(a=b[1], b=b[2]+b[3] , col="red" , lty=2)	
+    legend("topleft",c("Placebo","High-Dose"),
+    	col=c("blue","red"), lty=c(1,1), pch=c(15,16))
+    ```
+
+    From the dotted lines above for the two groups, we can see that the mean cholesterol level tends to increase as time moves on.
+
+    1b)
+
+    ```{r}
+    mod.unst = gls(Chol ~ Trt+factor(Month)+Trt*factor(Month), data=NCGS.long, weight=varIdent(form = ~ 1 | Time),corr=corSymm(, form = ~ Time | ID))
+
+    summary(mod.unst)
+    ```
+
+    Y(ij) = 236.64 - 9.87 Trt(ij) + 6.68 I(Month=6)(ij) + 7.90 I(Month=12)(ij) + 25.26 I(Month=20)(ij) + 20.84 I(Month=24)(ij) + 16.16 TrtI(Month=6)(ij) + 17.93 TrtI(Month=12)(ij) +\
+    1.10 TrtI(Month=20)(ij) + 9.11 TrtI(Month=24)(ij)
+
+    1c) Estimated correlation between time 1 and time 2: 0.764.\
+    Estimated correlation between time 1 and time 5: 0.606.
+
+    1d)
+
+    ```{r}
+    mod.ar = gls(Chol ~ Trt+factor(Month)+Trt*factor(Month), data=NCGS.long,corr=corAR1(, form = ~ Time | ID))
+    summary(mod.ar)
+    ```
+
+    1e)
+
+    1f) Model 1 (mod.ar) AIC: 3275.724; Model 2 (mod.unst) AIC: 3234.935.
+
+    Based on the AIC values provided, we can see that Model 2 has a lower AIC value (3234.935) compared to Model 1 (3275.724). This suggests that Model 2 (mod.unst) is a better fit to the data compared to Model 1 (mod.ar).
+
+    In general, a lower AIC value indicates a better fit of the model to the data. AIC takes into account the complexity of the model as well as the goodness of fit. Thus, a model with a lower AIC value is preferred over a model with a higher AIC value.
+
+    1g)
+
+    ```{r}
+    anova(mod.ar, mod.unst)
+    ```
+
+    The likelihood ratio test can be used to compare the goodness of fit of two models. The null hypothesis is that the more restricted model (AR(1) covariance structure) is a better fit, and the alternative hypothesis is that the less restricted model (unstructured covariance) is a better fit.
+
+    In this case, the output from R shows that the likelihood ratio test statistic (L.Ratio) is 66.78882 with a corresponding p-value of less than 0.0001. This means that the unstructured covariance model is a significantly better fit than the AR(1) covariance model.
+
+    Therefore, we reject the null hypothesis that the AR(1) covariance structure is a better fit than the unstructured covariance structure in favor of the alternative hypothesis that the unstructured covariance structure is a better fit. This conclusion is based on the p-value which is less than 0.05 (or any reasonable significance level), indicating strong evidence against the null hypothesis.
+
+    1h)
+
+    ```{r}
+    mod.unst.numeric = gls(Chol ~ Trt+Month+Trt*Month, data=NCGS.long, weight=varIdent(form = ~ 1 | Time),corr=corSymm(, form = ~ Time | ID), method="ML")
+    summary(mod.unst.numeric)
+    ```
+
+    1i)
+
+    ```{r}
+    mod.unst.quad = gls(Chol ~ Trt+Month+Trt*Month+I(Month^2)+Trt*I(Month^2), data=NCGS.long, weight=varIdent(form = ~ 1 | Time),corr=corSymm(, form = ~ Time | ID), method="ML")
+    summary(mod.unst.quad)
+    ```
+
+    1j)
+
+    ```{r}
+    anova(mod.unst.numeric, mod.unst.quad)
+    ```
+
+    Model 2 (mod.unst.quad) fits the data better because it has a lower AIC value (3285.172) compared to that of Model 1 (mod.unst.numeric).
+
+2.  Linear mixed effects model: Yij = B0 + B1 tij + B2 Xij + b0i + b1i tij + eij.
+
+    2a) The expression for the marginal mean cholesterol level for a male subject on day 20 is: E(Yij\|tij=20, Xi=1) = B0 + B1 tij + B2 Xij + E(b0i) + E(b1i) tij.\
+    Since the random effects are assumed to be normally distributed with mean 0 and variances sigmab0\^2 and sigmab1\^2, respectively, we have: E(b0i) = 0 and E(b1i) = 0.\
+    Therefore, the expression simplifies to: E(Yij\|tij=20, Xi=1) = B0 + B1(20) + B2(1).
+
+    2b) The conditional mean cholesterol level for a male subject on day 20, given the individual-specific random effects, is: E(Yij\|tij=20, Xi=1, b0i, b1i) = B0 + B1 tij + B2 Xij + b0i + b1i tij. Setting tij=20 & Xi=1, we get: E(Yij\|tij=20, Xi=1, b0i, b1i) = B0 + B1(20) + B2(1) + b0i + b1i(20).\
+    Using the formula for the conditional expectation for an LME model, we can obtain the conditional mean cholesterol level for a male subject on day 20 as:\
+    E(Yij\|tij=20, Xi=1) = B0 + B1(20) + B2(1) + E(b0i\|tij=20, Xi=1) + E(b1i\|tij=20, Xi=1)(20).
+
+    2c) The expression for the marginal mean cholesterol level for a female subject on day 20 is: E(Yij\|tij=20, Xi=0) = B0 + B1(20) + B2(0).\
+    Subtracting this expression from the expression for the marginal mean cholesterol level for a male subject on day 20, we get: E(Yij\|tij=20, Xi=1) - E(Yij\|tij=20, Xi=0) = (B0 + B1(20) + B2(1)) - (B0 + B1(20) + B2(0)).\
+    Simplifying this expression, we get: E(Yij\|tij=20, Xi=1) - E(Yij\|tij=20, Xi=0) = B2.\
+    Therefore, the difference in marginal mean cholesterol levels between a male subject on day 20 and a female subject on day 20 is equal to the fixed effect B2.
+
+    2d)  The expression for the conditional mean cholesterol level for a female subject at day j, given the individual-specific random effects, is: E(Yij\|tij=j, Xi=0, b0i, b1i) = B0 + B1 tij + B2 Xij + b0i + b1i tij.\
+    Setting Xi=0 for a female subject, between day 10 and day 40, we get:\
+    E(Yij\|tij=10, Xi=0, b0i, b1i) = B0 + B1(10) + b0i + b1i(10)\
+    E(Yij\|tij=40, Xi=0, b0i, b1i) = B0 + B1(40) + b0i + b1i(40)\
+    The difference in conditional mean cholesterol levels between day 10 and day 40 for a female subject is: E(Yij\|tij=40, Xi=0) - E(Yij\|tij=10, Xi=0) = (B0 + B1(40) + b0i + b1i(40)) - (B0 + B1(10) + b0i + b1i(10)) =\> E(Yij\|tij=40, Xi=0) - E(Yij\|tij=10, Xi=0) = B1(40-10).\
+    Therefore, the difference in conditional mean cholesterol levels between day 10 and day 40 for a female subject is equal to the fixed effect B1 multiplied by the time difference of 30 days.
+
+    2e)  In the linear mixed effects model for cholesterol, there are two sources of random variation: the random intercept (b0i) and the random slope (b1i).\
+    The random intercept represents the variability in the baseline cholesterol level for each individual, which is not accounted for by the fixed effects in the model. In other words, the random intercept captures the fact that different individuals may have different average cholesterol levels even if they have the same sex and are measured at the same time points. For example, some individuals may have a higher baseline cholesterol level due to genetic factors or lifestyle habits. The random intercept is assumed to be normally distributed with a mean of 0 and a variance of sigmab0\^2.\
+    The random slope represents the variability in the rate of change in cholesterol levels over time for each individual, which is not accounted for by the fixed effects in the model. In other words, the random slope captures the fact that different individuals may have different rates of change in their cholesterol levels over time, even if they have the same sex. For example, some individuals may experience a faster or slower increase in cholesterol levels over time due to differences in their metabolism or diet. The random slope is assumed to be normally distributed with a mean of 0 and a variance of sigmab1\^2.\
+    The random intercept and random slope are assumed to be independent of each other and independent of the error term (eij), which represents the residual variation not explained by the fixed or random effects. The random effects capture the variation between individuals that is not explained by the fixed effects, and they are an important source of variability in the model. By including the random intercept and random slope in the model, we can account for this variability and obtain more accurate estimates of the fixed effects.
+
+3.  3a) E(Yi bar\|X) = (B0 + B1 x1ij + B2 x2ij)/ni = B0/ni + x1i bar + x2i bar
+
+    3b) This is done to keep the variances same across all i instructors.\
+    Var(Yi bar) = sigma\^2/ni =\> ni\*Var(Yi bar) = sigma\^2. Therefore, the variance of instructors' average rating is sigma\^2.

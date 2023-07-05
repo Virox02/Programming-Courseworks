@@ -1,0 +1,189 @@
+---
+title: "STATS 112 HW1"
+author: "Viraj Vijaywargiya"
+date: "2023-04-13"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(lattice)
+library(nlme)
+library(lme4)
+library(survival)
+library(tidyverse)
+```
+
+1.  
+
+    ```{r}
+    epilepsy = read.table("/Users/virajvijaywargiya/Downloads/epilepsy.txt", header=TRUE)
+    epilepsy[,4] = epilepsy[,4]/8
+    epilepsy[,c(5:8)] = epilepsy[,c(5:8)]/2
+    epi.long = reshape(epilepsy, idvar="ID", varying=list(4:8),v.names="Rate", timevar="Time", times=c(0,2,4,6,8),direction="long")
+    ```
+
+    **1a)**
+
+    ```{r}
+    tapply(epi.long$Rate, list(epi.long$Time,epi.long$trt), mean)
+    ```
+
+    **1b)**
+
+    ```{r}
+    means = tapply(epi.long$Rate,list(epi.long$Time,epi.long$trt),mean)
+
+    matplot(c(0,2,4,6,8),means,col=c(1,1),lty=c(3,1),type="o",pch=c(1,16),xlab="Time (weeks)",ylab="Mean rate of seizures (per week)",ylim=c(2.5,5.0),main="Mean Rate of Seizures by Treatment Group")
+
+    legend(3.5,3.0, c("Placebo","Progabide"), lty=c(3,1))
+    ```
+
+    **1c)**
+
+    ```{r}
+    Prog = epi.long[epi.long$trt=="Progabide",]
+    Plac = epi.long[epi.long$trt=="Placebo",]
+
+    # Progabide group
+    xyplot(Rate ~ Time | factor(ID), data=Prog, type="o",main="Response Trajectories in Progabide Group",xlab="Time (weeks)", ylab="Rate of Seizures (per week)")
+    ```
+
+    There seems to be a slight downwards trend with time moving on.
+
+    **1d)**
+
+    ```{r}
+    # Placebo group
+    xyplot(Rate ~ Time | factor(ID), data=Plac, type="o",main="Response Trajectories in Placebo Group",xlab="Time (weeks)", ylab="Rate of Seizures (per week)")
+    ```
+
+    This also seems to have a slight downwards trend with time moving on.
+
+    **1e)** Sample Covariance matrix for the Placebo group:
+
+    ```{r}
+    cov(epilepsy[epilepsy$trt=="Placebo",4:8])
+    ```
+
+    Sample covariance matrix for the Progabide group:
+
+    ```{r}
+    cov(epilepsy[epilepsy$trt=="Progabide",4:8])
+    ```
+
+    The sample covariance between weeks vary quite a bit across time. They seem somewhat similar across the time lags in the placebo group, however, they differ quite a bit in the Progabide group. For example: In the Progabide group, the sample covariance at the baseline is 12.24 but in week 2 it jumps to 83.18.
+
+    **1f)**
+
+    ```{r}
+    Pro.W0 = epilepsy$Week0[epilepsy$trt=="Progabide"]
+    Pro.W8 = epilepsy$Week8[epilepsy$trt=="Progabide"]
+    t.test(Pro.W0, Pro.W8, paired=T, alternative="two.sided")
+    ```
+
+    Null Hypothesis H0: u(d) = 0 vs Alternate Hypothesis HA: u(d) != 0. Test statistic t = 1.054, p-value = 0.3003.\
+    Therefore, we fail to reject the null, and conclude that the mean change in rate of seizures from the baseline to the last week of the study is equal to zero.
+
+    **1g)**
+
+    ```{r}
+    Diffs = epilepsy$Week8 - epilepsy$Week0
+    Pro.D = Diffs[epilepsy$trt=="Placebo"]
+    Pla.D = Diffs[epilepsy$trt=="Progabide"]
+    t.test(Pla.D, Pro.D, mu=0, alternative="two.sided")
+    ```
+
+    Null Hypothesis H0: u1 = u2 vs Alternate Hypothesis HA: u1 != u2 (u1 is the mean change for Placebo and u2 is the mean change for Progabide). Test statistic t = -1.0656. p-value = 0.2913.\
+    Therefore, we fail to reject the null hypothesis and conclude that the mean change in rate of seizures from the baseline to the last week of the study is the same in both groups.
+
+2.  **2a)**
+
+    ```{r}
+    exercise = read.csv("/Users/virajvijaywargiya/Downloads/exercise.csv")
+    summary(exercise)
+    ```
+
+    From the output we can see that the averages for each week are around 80-82, and the inter-quartile ranges are similar. In addition, there are missing observations in week 1, 2, 3, 4.
+
+    **2b)**
+
+    ```{r}
+    library(GGally)
+    ggpairs(select(exercise, -id))
+    ```
+
+    This plot shows all the possible two-way relationships. It will do a scatterplot if both variables from the dataset are quantitative, for example, week measurements. The top row shows boxplots of the weekly measurements by different groups.\
+    We are excluding the IDs because it plays no role in the dataset as a covariate.
+
+    **2c)**
+
+    ```{r}
+    exercise %>%
+    ggplot(aes(x = program, y = week_0)) + geom_boxplot()
+    ```
+
+    From the boxplots above, we can see that the weights_increase group has a slightly higher muscle strength measurement than the repetitions_increase group, for week 0.
+
+    **2d)**
+
+    ```{r}
+    long_exercise <- exercise %>%
+    pivot_longer(cols = starts_with("week"),
+    names_to = "week",
+    values_to = "muscle_strength")
+    glimpse(long_exercise)
+    ```
+
+    **2e)**
+
+    ```{r}
+    long_exercise %>%
+    ggplot(aes(x = program, y = muscle_strength)) + geom_boxplot() +
+    facet_wrap(~week, nrow = 3)
+    ```
+
+    For the repetitions_increase group, the average muscle strength across the weeks does not have much difference, it is mainly similar. However, the range for the muscle strength increases across the week, reaching maximum around 85.
+
+    **2f)**
+
+    ```{r}
+    long_exercise %>%
+    group_by(program, week) %>%
+    summarize(mean_muscle_strength = mean(muscle_strength, na.rm = TRUE),
+    sd_muscle_strength = sd(muscle_strength, na.rm = TRUE))
+    ```
+
+    This output relates to what was stated in part e as from the output we can see that the mean_muscle_strength is approximately the same across the weeks, however, the sd_muscle_strength increases across the weeks.
+
+    **2g)**
+
+    ```{r}
+    long_exercise <- long_exercise %>%
+    mutate(week_numeric = str_sub(week, 5, 6),
+    week_numeric = as.numeric(as.factor(week_numeric))) %>%
+    relocate(week_numeric, .after = week)
+
+    long_exercise %>%
+    ggplot(aes(x = week_numeric, y = muscle_strength,
+    group = id, color = factor(id))) + geom_point(show.legend = FALSE) +
+    geom_line(show.legend = FALSE) + labs(x = "Week", y = "Muscle Strength")
+    ```
+
+    There isn't any fixed trend in the time plot above, some increase across weeks and some decrease. The time trends are all over the place.
+
+    **2h)**
+
+    ```{r}
+    long_exercise %>%
+    group_by(week_numeric, program) %>%
+    summarize(mean_muscle_strength = mean(muscle_strength, na.rm = TRUE)) %>%
+    ggplot(aes(x = week_numeric, y = mean_muscle_strength, color = program)) + geom_point() +
+    geom_line() +
+    labs(x = "Week", y = "Mean Muscle Strength")
+    ```
+
+    The mean muscle strength for both groups increase as the weeks increase, therefore, there is an increase in the time trend.

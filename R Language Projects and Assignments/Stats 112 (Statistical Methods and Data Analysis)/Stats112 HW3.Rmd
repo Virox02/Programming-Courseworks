@@ -1,0 +1,145 @@
+---
+title: "Stats112 HW3"
+author: "Viraj Vijaywargiya"
+date: "2023-05-10"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library( nnet )
+library(lattice)
+library(nlme)
+library(lme4)
+library(survival)
+library(tidyverse)
+```
+
+1.  
+
+    ```{r}
+    birthwt = read.table("/Users/virajvijaywargiya/Downloads/birthwt-data.txt", header=FALSE)
+    names(birthwt) = c("MID", "Order", "Wt", "Age", "CID")
+    ```
+
+    1a)
+
+    ```{r}
+    mod = lme(Wt ~ 1 + Age, random = ~1 | MID, data=birthwt, method="ML")
+    summary(mod)
+    ```
+
+    1b) Yij = B0 + b0i + B1Age(ij) + eij
+
+    1c)
+
+    ```{r}
+    mod0 = lme(Wt ~ 1, random = ~1 | MID, data=birthwt, method="ML")
+    summary(mod0)
+
+    anova(mod0, mod)
+    ```
+
+    The LRT test above shows that Model 2 (mod) is better as it has lower AIC value. Therefore, age shouldn't be dropped from the model in part a.
+
+    1d)
+
+    ```{r}
+    mod1 = lme(Wt ~ 1 + Age, random = ~1+Age | MID, data=birthwt, method="ML")
+    summary(mod1)
+    ```
+
+    1e)
+
+    ```{r}
+    head(random.effects(mod1))
+    ```
+
+    Yij = -126.02 + b0i + 21.7 Age(ij)
+
+    1f)
+
+    ```{r}
+    mod1.reml = lme(Wt ~ 1 + Age, random = ~1+Age | MID, data=birthwt, method="REML")
+    summary(mod1.reml)
+
+    mod.reml = lme(Wt ~ 1 + Age, random = ~1 | MID, data=birthwt, method="REML")
+    summary(mod.reml)
+
+    anova(mod.reml, mod1.reml)
+    ```
+
+    From the results above, Model 2 (mod1.reml) is better as it has a lower AIC value. Therefore, a random slope and intercept is necessary in the model.
+
+2.  In clustered data, measurements within the same cluster (in this case, within the same school) may be correlated, and this correlation needs to be accounted for in the analysis. One common way to model the covariance structure of clustered data is to assume a compound symmetry structure.
+
+    A compound symmetry structure assumes that the variances of measurements within a cluster are equal, and that the correlation between any two measurements within a cluster is the same. In other words, it assumes that the within-cluster covariance matrix has a constant value along its diagonal and a constant value off the diagonal.
+
+    In the case of this study, it is reasonable to assume that the variance of math achievement scores within a school is roughly the same for all students, regardless of their sex or socioeconomic status. Moreover, it is reasonable to assume that the correlation between any two math achievement scores within a school is the same, regardless of the sex or socioeconomic status of the students.
+
+    Therefore, a compound symmetry structure for the variance-covariance of measurements within a school is a reasonable assumption for this study.
+
+3.  
+
+    ```{r}
+    NCGS = read.table("/Users/virajvijaywargiya/Downloads/cholesterol-data.txt", na.strings=".")
+    names(NCGS) = c("Trt", "ID", "M0", "M6", "M12", "M20", "M24")
+
+    NCGS$Trt = factor(NCGS$Trt, levels=c(2,1), labels=c("Placebo","HighDose"))
+
+    NCGS.long = reshape(NCGS, varying=list(3:7), idvar="ID", timevar="Month", times=c(0,6,12,20,24), v.names="Chol", direction="long")
+
+    NCGS.long$Time = as.numeric(factor(NCGS.long$Month))
+    ```
+
+    3a)
+
+    ```{r}
+    mod.lme  = lme(Chol~Trt+I(Month)+I(Month^2), data=NCGS.long, random=~I(Month)+I(Month^2)|ID, na.action=na.omit, method="ML")
+    summary(mod.lme)
+    ```
+
+    3b) TrtHighDose has a p-value = 0.895 \> 0.05. Therefore, we fail to reject the null, and conclude that treatment main effect is not significant.
+
+    3c)
+
+    ```{r}
+    getVarCov(mod.lme, type = "random.effects")
+    ```
+
+    3d) estimated variance of the random intercepts: 1670.5000\
+    estimated variance of the random slopes: 1.228300\
+    estimated correlation between the random intercepts and slopes: -30.7720
+
+    3e)
+
+    ```{r}
+    random.effects(mod.lme)[96,]
+    ```
+
+    b(0, 96) = -48.06948, b(1, 96) = 0.6253423, b(2, 96) = -0.02291203.
+
+    3f)
+
+    ```{r}
+    fitted(mod.lme)[names(fitted(mod.lme))=="71"]
+    ```
+
+    estimated response for Month 6: 215.6939
+
+    3g)
+
+    ```{r}
+    mod.lme.notime = lme(Chol~ Trt+ I(Month)+I(Month^2) , data=NCGS.long, random=~1|ID, na.action=na.omit, method="REML")
+    summary(mod.lme.notime)
+
+    mod.rlme.reml  = lme(Chol~Trt+I(Month)+I(Month^2), data=NCGS.long, random=~I(Month)+I(Month^2)|ID, na.action=na.omit, method="REML")
+    summary(mod.rlme.reml)
+
+    anova(mod.lme.notime, mod.rlme.reml)
+    ```
+
+    From the above results, model 1 (mod.lme.notime) is better as it has lower AIC value. Therefore, we shouldn't have random effects on the time covariates.

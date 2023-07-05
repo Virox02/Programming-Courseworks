@@ -1,0 +1,253 @@
+---
+title: "Stats112 HW4"
+author: "Viraj Vijaywargiya"
+date: "2023-05-25"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(nlme)
+library(ggplot2)
+library(mgcv)
+library(readr)
+library(geepack)
+library(lme4)
+```
+
+1.  
+
+    ```{r}
+    prog = read.csv("/Users/virajvijaywargiya/Downloads/progesterone.csv", header = TRUE)
+    ```
+
+    **1a)**
+
+    ```{r}
+    prog %>% 
+      group_by(group) %>% 
+      ggplot(aes(time, PDG, group = id, color = as.factor(group))) +
+      geom_point() +
+      geom_line() +
+      labs(x = "Day",
+           y = "Distance dental growth (mm)")
+    ```
+
+    **1b)**
+
+    ```{r}
+    prog$group = as.factor(prog$group)
+    prog = prog %>% 
+      mutate(timeSqr = time^2, timeCub = time^3)
+
+    model1 = lme(PDG ~ time + group : time + timeSqr + group: timeSqr ,
+                         data = prog,
+                         random = ~ 1 + time + timeSqr| id,
+                         method = "REML")
+
+    summary(model1)
+    ```
+
+    **1c)**
+
+    ```{r}
+    res_population = residuals(model1, type = "response", level = 0)
+
+    Sigma_i = extract.lme.cov(model1, prog)
+    L_i = t(chol(Sigma_i)) #block matrix of lower triangular Cholesky factors
+    res_transformed <- solve(L_i) %*% res_population
+    tibble(r_star = res_transformed) %>% 
+      ggplot(aes(x = r_star)) +
+      geom_histogram(aes(y = stat(density)), bins = 14, color = "black", fill = "gray") +
+      geom_function(fun = dnorm, color = "blue") +
+      labs(x = "Residuals", y = "Density")
+    ```
+
+    By examining the histogram of transformed residuals, we can assess their distributional characteristics, such as skewness and kurtosis, and compare them to the expected distribution (e.g., a normal distribution). Additionally, overlaying the density function (e.g., the normal distribution) on the histogram allows for visual comparison and evaluation of the fit. Therefore, transforming residuals is a valuable step in model diagnostics, helping to verify the assumptions of the statistical model, identify potential issues, and guide the need for further refinements or adjustments.
+
+    **1d)**
+
+    ```{r}
+    mu_hat = fitted(model1, level = 0)
+    mu_hat_transformed = solve(L_i) %*% mu_hat
+    abs_res_transformed = abs(res_transformed)
+
+    tibble(x = mu_hat_transformed, y = abs_res_transformed) %>% 
+      ggplot(aes(x = x, y = y)) +
+      geom_hline(yintercept = 0.8, linetype = "dashed") +
+      geom_point(shape = 1) +
+      geom_smooth(method = "loess", se = FALSE) +
+      labs(x = "Transformed Predicted Value", y = "Absolute Transformed Residual")
+    ```
+
+    Smoothed line is roughly around 1, implying our systematic component is fitting the data well.
+
+    **1e)**
+
+    ```{r}
+    tibble(r_star = res_transformed) %>% 
+      ggplot(aes(sample = r_star)) +
+      geom_qq_line(color = "blue") +
+      geom_qq(shape = 1) +
+      labs(x = "Quantiles of Standard Normal", y = "Quantiles of Transformed Residuals")
+    ```
+
+    The bottom end of the Q-Q plot deviates from the straight line but the upper end is not, therefore, the distribution has a longer tail to its left and is left-skewed.
+
+    **1f)**
+
+    ```{r}
+    mahalanobis_distance = function(x){
+      x <- as.matrix(x)
+      t(x) %*% x
+    }
+
+    mahalanobis_data <- tibble(id = prog$id, r_star = res_transformed) %>% 
+      group_by(id) %>% 
+      nest() %>% 
+      mutate(df = map_dbl(data, ~nrow(.x)))%>% 
+      mutate(d = map_dbl(data, ~mahalanobis_distance(.x)))%>% 
+      mutate(p_value = pchisq(d, df, lower.tail= FALSE))
+
+
+    mahalanobis_data %>% 
+      arrange(p_value)
+
+    sum(mahalanobis_data$p_value<0.05)
+    ```
+
+    9
+
+    **1g)**
+
+    ```{r}
+    Variogram(model1,
+              data = prog,
+              form = ~ 1 + time + timeSqr| id ,
+              resType = "normalized") %>% 
+      as_tibble() %>% 
+      ggplot(aes(x = dist, y = variog)) +
+      geom_hline(yintercept = 1, linetype = "dashed") +
+      geom_point(shape = 1) +
+      geom_smooth(method = "loess", se = FALSE, span = 0.1)
+    ```
+
+    The plot of the semi-variogram fluctuates randomly around the horizontal line at 1.
+
+2.  
+
+    ```{r}
+    toes = read.table("/Users/virajvijaywargiya/Downloads/toenail-data.txt", header=FALSE)
+    names(toes) = c("ID","Y","Trt","Month","Visit")
+    toes$Trt = factor(toes$Trt, levels=c(0,1), labels=c("Itra","Terb"))
+    toes$ID = factor(toes$ID)
+    ```
+
+    **2a)**
+
+    ```{r}
+    visits = c(1,2,3,4,5,6,7)
+    plot(visits, unlist(by(toes[toes$Trt=="Itra",]$Y, toes[toes$Trt=="Itra",5] , mean)), type="o", 
+       pch=16, col="blue",xlab="Visit", ylab="Moderate or Severe Outcome", 
+          main="Proportion Mod-Severe Outcomes by Treatment and Month", ylim=c(0,0.5))
+
+    points(visits, unlist(by(toes[toes$Trt=="Terb",]$Y, toes[toes$Trt=="Terb",5] , mean)), type="o", 
+       pch=17, col="red")  
+       
+    legend(6,.3,c("Itra","Terb"), col=c("blue","red"), pch=c(16,17))
+    ```
+
+    The estimated proportion of moderate/severe infection for both the treatment groups decreases overtime (as month increases). However, it decreases slightly faster for treatment "Terb" than that for "Itra".
+
+    **2b)** logit(P(Y = 1)) = B0 + B1 \* Month + B2 \* Treatment + B3 \* (Month \* Treatment)
+
+    **2c)**
+
+    ```{r}
+    mod1gee= geeglm(Y ~ 1+Month*Trt , family=binomial, id=ID, corstr="exchangeable", data=toes)
+    summary(mod1gee)
+    ```
+
+    **2d)** For the existing treatment group (coded as 0): When all other variables are held constant, a unit increase in Month is associated with a change in the log odds of moderate/severe infection by the coefficient B1. This means that for each additional month, the log odds of moderate/severe infection increase by B1.
+
+    For the new treatment group (coded as 1): When all other variables are held constant, a unit increase in Month is associated with a change in the log odds of moderate/severe infection by the sum of coefficients B1 and B3. This means that for each additional month, the log odds of moderate/severe infection increase by B1 + B3. The B3 coefficient represents the difference in the effect of Month between the new treatment group and the existing treatment group. If B3 is positive, it indicates that the new treatment (Terbinafine) has a greater increase in the log odds of moderate/severe infection over time compared to the existing treatment (Itraconazole). Conversely, if B3 is negative, it suggests that the new treatment has a smaller increase in the log odds of moderate/severe infection over time compared to the existing treatment.
+
+    **2e)**
+
+    ```{r}
+    mod3gee = geeglm(Y ~ 1+Trt , family=binomial, id=ID, corstr="exchangeable", data=toes)
+    anova(mod1gee, mod3gee)
+    ```
+
+    **2f)** The AIC (Akaike Information Criterion) and likelihood ratio test are commonly used for model selection and hypothesis testing in traditional regression models. However, they cannot be directly applied to GEE models. This is because GEE estimation involves the specification of a working correlation structure, which affects the model's asymptotic distribution. The AIC and likelihood ratio test rely on specific assumptions about the likelihood function, which may not hold under the GEE framework. Instead, hypothesis testing in GEE models typically involves score tests or Wald tests based on robust standard errors to account for the correlation structure.
+
+    **2g)** logit(P(Y_ij = 1)) = B0 + b_i + B1 \* Month_ij + B2 \* Treatment_ij + B3 \* (Month_ij \* Treatment_ij)
+
+    **2h)**
+
+    ```{r}
+    mod = glmer(Y ~ 1+Month*Trt  + (1 | ID), family=binomial, data=toes, nAGQ =  5)
+    summary(mod)
+    ```
+
+    **2i)** A lower AIC value indicates a better-fitting model relative to other models being compared. To conduct a test of whether or not to include Month in the model, including both the main effect and interaction term, you can compare the AIC values of two nested models: one with Month included and one without Month.
+
+    **2j)** For the average or typical subject in the dataset, a unit increase in Month is associated with a change in the odds of having a moderate/severe infection. The estimated effect can be interpreted as follows: On average, for every one-unit increase in Month, the odds of a moderate/severe infection occurring increase (or decrease) by a factor of exp(B1), where B1 represents the estimated coefficient for the effect of Month in the model. This interpretation assumes all other variables in the model are held constant.
+
+    **2k)**
+
+    ```{r}
+    coef(mod)$ID[1:5,]
+    ```
+
+    logit(P(Y_ij = 1)) = 2.0166 - 0.3821\*Month_ij - 0.1298\*TrtTerb_ij - 0.1336\*(Month_ij \* TrtTerb_ij)
+
+    **2l)** The GEE model focuses on the population-average treatment effect and marginal relationship between covariates and the response, whereas the GLMM model allows for individual-specific treatment effects and incorporates subject-specific random effects. The GEE model is suitable for population-level inference and marginal effects estimation, while the GLMM model is appropriate for individual-level inference and accounting for both fixed and random effects.
+
+3.  
+
+    ```{r}
+    skin = read.csv("/Users/virajvijaywargiya/Downloads/skin.csv")
+    skin$trt_num = skin$trt
+    skin$trt = factor(skin$trt, levels=c('0','1'),labels=c('Placebo','beta carotene'))
+    ```
+
+    **3a)** log(E(Y)) = B0 + B1 \* Treatment + B2 \* Year + B3 \* (Treatment \* Year)
+
+    **3b)** The offset term is typically used in generalized linear models (GLMs) to account for exposure or time-at-risk when modeling rates or counts. It allows for the inclusion of an offset variable that represents the logarithm of the expected exposure or time-at-risk.
+
+    In the given scenario of preventing non-melanoma skin cancer, the outcome variable Y is already defined as the count of new skin cancers per year, which inherently accounts for the time-at-risk. Therefore, there is no need to include an offset term in the model.
+
+    By including the Year variable as a predictor in the model, we are implicitly accounting for the variation in time-at-risk across different years of follow-up. The coefficient associated with Year (B2) captures the effect of the follow-up year on the count of new skin cancers while considering the differences in exposure time.
+
+    Hence, in this specific case, the inclusion of an offset term is unnecessary since the count variable itself represents the time-at-risk, and the Year variable adequately captures the impact of time in the model.
+
+    **3c)**
+
+    ```{r}
+    gee_2 = geeglm(y ~ year + trt + year*trt,data = skin,family = poisson(link = "log"),id = id,  corstr = "ar1")
+    summary(gee_2)
+    ```
+
+    **3d)** The coefficient of Treatment (B1) in the model represents the change in the log count of new skin cancers per year when switching from the placebo (Treatment = 0) to the treatment (Treatment = 1), while holding the year constant. In terms of interpretation, if B1 is positive and statistically significant, it suggests that the treatment (beta carotene) is associated with an increase in the log count of new skin cancers compared to the placebo. Conversely, if B1 is negative and statistically significant, it indicates that the treatment is associated with a decrease in the log count of new skin cancers compared to the placebo.
+
+    **3e)** The coefficient of Year (B2) in the model represents the change in the log count of new skin cancers per unit increase in the follow-up year, while holding the treatment constant. The interpretation is that if B2 is positive and statistically significant, it indicates that there is an increasing trend in the log count of new skin cancers over time, regardless of the treatment received. Conversely, if B2 is negative and statistically significant, it suggests a decreasing trend in the log count of new skin cancers over time, independent of the treatment.
+
+    **3f)** The coefficient of the interaction term (Treatment \* Year; B3) in the model represents the additional effect on the log count of new skin cancers due to the combined influence of both treatment and follow-up year. The interpretation of this coefficient is that if B3 is positive and statistically significant, it suggests that the treatment effect on the log count of new skin cancers varies depending on the follow-up year. In other words, the impact of treatment differs across different years. If B3 is negative and statistically significant, it indicates that the treatment effect on the log count of new skin cancers also varies with the follow-up year, but in the opposite direction.
+
+    **3g)** log(E(Yij)) = B0 + B1 \* Treatment_ij + B2 \* Year_ij + B3 \* (Treatment_ij \* Year_ij) + b0i + b1i \* Year_ij + eij
+
+    **3h)**
+
+    ```{r}
+    glmm_3 = glmer(y ~ year+trt+trt*year + (1+year | id), family=poisson, data=skin , nAGQ=0)
+    summary(glmm_3) 
+    ```
+
+    **3i)** In the random effects model, the estimated coefficient of Year (-0.0365) indicates the average rate of change in the log count of new skin cancers per unit increase in the follow-up year, while considering the random intercept and random slope. A negative coefficient suggests that, on average, there is a decreasing trend in the log count of new skin cancers over time. For every one unit increase in the follow-up year, the expected log count of new skin cancers decreases by 0.0365, holding the treatment and individual-specific variations constant.
+
+    **3j)** In the random effects model, the estimated coefficient of the interaction term (year:trtbeta carotene) is 0.0209. This coefficient represents the additional effect on the log count of new skin cancers due to the combined influence of both treatment (beta carotene) and follow-up year, while accounting for random intercept and random slope. A positive coefficient suggests that the treatment effect varies depending on the follow-up year. Specifically, for every one unit increase in the follow-up year, the treatment (beta carotene) is associated with a 0.0209 increase in the log count of new skin cancers, holding individual-specific variations constant.
