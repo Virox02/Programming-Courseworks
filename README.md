@@ -1,4 +1,4 @@
-# 🧠 Relevant Programming Courseworks — UC Irvine (B.S. Data Science)
+# 💻 Relevant Programming Courseworks — UC Irvine (B.S. Data Science)
 
 Welcome to my undergraduate programming coursework portfolio, completed as part of the **B.S. in Data Science** program at **UC Irvine**. This repository showcases a variety of assignments and projects that reflect my growing expertise in **Python**, **C++**, **R**, **data structures**, **algorithms**, **machine learning**, **data analysis & visualization**, and **software engineering principles**.
 
